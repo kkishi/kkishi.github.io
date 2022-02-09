@@ -1,0 +1,8 @@
+---
+layout: post
+title:  "PiKVM"
+categories: workstation
+---
+Workstation用にKVMが欲しくなり調べていたらPiKVMを見つけた。[HATはCHF 159.00する](https://www.pi-shop.ch/pikvm-v3-hat)が、[What's On My Home Server? Storage, OS, Media, Provisioning, Automation](https://www.youtube.com/watch?v=f5jNJDaztqk&t=395s)を見るとDIYで作ってもそれほど部品が多くなさそう。
+
+[DIY Getting Started](https://github.com/pikvm/pikvm#diy-getting-started)の[Hardware for v2](https://github.com/pikvm/pikvm#hardware-for-v2)を読む。自分はRaspberry Pi 4一式を既に持っているので、[Video capture device](https://www.aliexpress.com/item/4000102166176.html) ($27.78)さえ買えば良い。Y-splitter cableは、[Making an USB power/data Y split cable for PiKVM](https://www.youtube.com/watch?v=uLuBuQUF61o)を参考に余っているケーブルで自作できそう。
