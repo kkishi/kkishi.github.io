@@ -1,7 +1,6 @@
 ---
 layout: post
 title:  "PiKVM"
-categories: workstation
 ---
 Workstation用にKVMが欲しくなり調べていたらPiKVMを見つけた。[HATはCHF 159.00する](https://www.pi-shop.ch/pikvm-v3-hat)が、[What's On My Home Server? Storage, OS, Media, Provisioning, Automation](https://www.youtube.com/watch?v=f5jNJDaztqk&t=395s)を見るとDIYで作ってもそれほど部品が多くなさそう。
 

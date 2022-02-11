@@ -1,0 +1,51 @@
+---
+layout: post
+title:  "Linux KVM"
+---
+
+# KVMのインストール
+
+<https://ubuntu.com/blog/kvm-hyphervisor>を参照。
+
+kvmグループにadduserするとsudo無しでvirshコマンドが使えるようになる。
+
+```bash
+sudo adduser $USER kvm
+```
+
+# virshコマンドの使い方
+
+VMのインストール:
+
+```bash
+virt-install \
+  --name ubuntu \
+  --memory 4096 \
+  --vcpus 4 \
+  --disk size=16 \
+  --cdrom ~/Downloads/jammy-desktop-amd64.iso
+```
+
+VM imageは`/var/lib/libvirt/images`に保存される。
+
+VMの破壊とデータの消去:
+
+```bash
+virsh destroy ubuntu
+virsh undefine ubuntu --wipe-storage --remove-all-storage
+```
+
+スナップショット関係:
+
+```bash
+virsh snapshot-create-as --domain ubuntu --name postinstall
+virsh snapshot-list --domain ubuntu
+virsh snapshot-revert --domain ubuntu --snapshotname postinstall
+virsh snapshot-delete --domain ubuntu --snapshotname postinstall
+```
+
+VMに割り当てられたIPアドレスの表示:
+
+```bash
+virsh net-dhcp-leases default
+```
