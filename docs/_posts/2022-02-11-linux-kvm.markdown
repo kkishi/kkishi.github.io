@@ -20,10 +20,11 @@ VMのインストール:
 ```bash
 virt-install \
   --name ubuntu \
-  --memory 4096 \
+  --memory 8192 \
   --vcpus 4 \
   --disk size=16 \
-  --cdrom ~/Downloads/jammy-desktop-amd64.iso
+  --cdrom ~/Downloads/jammy-desktop-amd64.iso \
+  --graphics vnc
 ```
 
 VM imageは`/var/lib/libvirt/images`に保存される。
