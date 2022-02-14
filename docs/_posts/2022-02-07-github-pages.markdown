@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Setting up Github Pages
+title: Github Pages
 ---
 
 Google Docsで雑多なメモを管理していたが、限界を感じてきたので専用ツールに移行したくなった。Docsは書くのは気楽だが読み返すのが面倒。
