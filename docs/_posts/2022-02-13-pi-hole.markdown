@@ -1,0 +1,38 @@
+---
+layout: post
+title:  "Pi-hole"
+---
+
+広告を消す用途よりはLocal DNSやVPNに興味があったので導入してみた。"Pi"-holeだがRaspberry Piである必要は無く、今のところはX220で実行している。主に[You're running Pi-Hole wrong! Setting up your own Recursive DNS Server!](https://www.youtube.com/watch?v=FnFtWsZ8IP0)を参考にした。
+
+# Prerequisites
+
+Pi-holeには静的IPを割り当てる必要がある。ひとまず[GUIで設定](https://linuxconfig.org/how-to-configure-static-ip-address-on-ubuntu-18-10-cosmic-cuttlefish-linux)したが、DHCPで割り当てる方がいいかも。
+
+# Pi-holeのインストール
+
+[公式ドキュメント](https://github.com/pi-hole/pi-hole/#one-step-automated-install)にあるように`curl -sSL https://install.pi-hole.net | bash`を実行する。
+
+# Unboundのインストール (optional)
+
+Pi-holeはデフォルトではexternal DNS (8.8.8.8等)をupstream DNSとして使用する。Unboundを使うことでその依存を取り除くことができる。
+
+`sudo apt install unbound`の後、[設定ファイル](https://docs.pi-hole.net/guides/dns/unbound/?h=unbound#configure-unbound)を`/etc/unbound/unbound.conf.d/pi-hole.conf`に置く。unboundを再起動して動作確認する。
+
+```
+sudo service unbound restart
+dig pi-hole.net @127.0.0.1 -p 5335
+```
+
+UnboundをPi-holeのupstram DNSとして設定する。これはPi-holeのUIからできる。これで、DNS queryが`Client`→`Pi-hole`→`Unbound`のように送られるようになった。
+
+# ルーターの設定
+
+Pi-holeをDNSとして使用するように設定する。Deco M9 Plusの設定はDecoのモバイルアプリから変更する必要がある。デフォルトではPrimary DNSとして192.168.0.1 (Connect Box)が設定されていたが、以下のように変更する。
+
+* Primary DNS: 192.168.68.20 (Pi-hole)
+* Secondary DNS: 192.168.0.1 (Connect Box)
+
+# Local DNS
+
+Pi-holeのUIにある`Local DNS`で設定できる。
