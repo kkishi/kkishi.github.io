@@ -1,0 +1,62 @@
+---
+layout: post
+title:  "IWYU"
+---
+
+# Install
+
+[README.md](https://github.com/include-what-you-use/include-what-you-use)に書いてある通りにする。
+
+```shell
+$ sudo apt install libclang-dev
+$ clang -v
+clang version 10.0.0-4ubuntu1
+...
+$ mkdir iwyu && cd iwyu
+iwyu$ git clone https://github.com/include-what-you-use/include-what-you-use.git
+iwyu$ cd include-what-you-use && git checkout clang_10 && cd ../
+iwyu$ mkdir build && cd build
+build$ cmake -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=/usr/lib/llvm-7 ../include-what-you-use
+```
+
+clangを入れるとflymakeが優先順位の関係でgccの代わりにそちらを使ってしまうことに注意。とりあえず次の行を.emacsに足した。
+
+`(setq-default flycheck-disabled-checkers '(c/c++-clang))`
+
+# Usage
+
+```shell
+~/projects/atcoder$ ../iwyu/build/bin/include-what-you-use -std=c++17 contests/abc248/abc248_f/main.cc
+
+contests/abc248/abc248_f/main.cc should add these lines:
+#include <ext/alloc_traits.h>  // for __alloc_traits<>::value_type
+#include <stdint.h>            // for int64_t
+#include <algorithm>           // for max
+#include <atcoder/modint.hpp>  // for operator==, dynamic_modint<>::mint
+#include <memory>              // for allocator_traits<>::value_type
+#include <vector>              // for vector
+
+contests/abc248/abc248_f/main.cc should remove these lines:
+- #include <bits/stdc++.h>  // lines 1-1
+- #include <atcoder/modint>  // lines 3-3
+
+The full include-list for contests/abc248/abc248_f/main.cc:
+#include <ext/alloc_traits.h>  // for __alloc_traits<>::value_type
+#include <stdint.h>            // for int64_t
+#include <algorithm>           // for max
+#include <atcoder/modint.hpp>  // for operator==, dynamic_modint<>::mint
+#include <memory>              // for allocator_traits<>::value_type
+#include <vector>              // for vector
+#include "atcoder.h"           // for hasbit, i64, rep, int, popcount, Main, eb
+#include "disjoint_set.h"      // for DisjointSet
+---
+```
+
+# Questions
+
+足りないheaderを自動で足したいのだが、そもそもコンパイルが通らないコードではIWYUは使えない？[clang-include-fixer](https://clang.llvm.org/extra/clang-include-fixer.html)というのもある。
+
+# TODO
+
+* [Pragam](https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/IWYUPragmas.md)を試す
+* [Mapping]()を試す
