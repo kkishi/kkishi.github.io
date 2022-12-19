@@ -57,8 +57,8 @@ Sun Dec 18 16:28:31 2022
 以下のコマンドで正常に起動できるようになった。
 
 ```sh
-sudo prime-select intel
-sudo apt remove nvidia-driver-525
+$ sudo prime-select intel
+$ sudo apt remove nvidia-driver-525
 ```
 
 ## webuiのインストール
@@ -88,14 +88,20 @@ $ cd ~/projects/stable-diffusion-webui/
 ここで`./webui.sh`を実行すると`ERROR: Cannot activate python venv, aborting...`というエラーが出る。[issues#1120](https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/1120)を参考に、以下のコマンドを実行する。
 
 ```sh
-python3 -m venv venv/
+$ python3 -m venv venv/
 ```
 
 再度`./webui.sh`を実行すると`AttributeError: module 'h11' has no attribute 'Event'`というエラーが出る。[issues#4833](https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/4833)を参考に、以下のコマンドを実行する。
 
 ```sh
-source venv/bin/activate
-pip install --force-reinstall httpcore==0.15
+$ source venv/bin/activate
+$ pip install --force-reinstall httpcore==0.15
 ```
 
 再度`./webui.sh`を実行するとHTTPサーバーが起動しURLが表示される。
+
+他のPCからアクセスしたい場合、以下の行を`webui-user.sh`に足してwebuiを再起動する。
+
+```sh
+export COMMANDLINE_ARGS="--listen"
+```
