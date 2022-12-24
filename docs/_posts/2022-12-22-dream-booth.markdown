@@ -17,9 +17,9 @@ title: DreamBooth
 
 Extensions > Available > Load from: をクリックして出る一覧の中から`Dreambooth`をインストールする。
 
-NOTE: 自分は`webui-user.sh`で`export COMMANDLINE_ARGS="--listen"`としていたせいで`AssertionError: extension access disabed because of commandline flags`というエラーが出た。<https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/4215>を参考にしてその行をコメントアウトすると上手く行く。インストールが終われば戻してよい。
+備考: 自分は`webui-user.sh`で`export COMMANDLINE_ARGS="--listen"`としていたせいで`AssertionError: extension access disabed because of commandline flags`というエラーが出た。<https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/4215>を参考にしてその行をコメントアウトする必要がある。インストールが終われば戻してよい。
 
-インストールが終わるとDreamboothタブが出る。また、`stable-diffusion-webui/extensions/sd_dreambooth_extension/`というディレクトリが作成されて、そこにコードなどが追加される。
+成功するとDreamboothタブが出る。また、`stable-diffusion-webui/extensions/sd_dreambooth_extension/`というディレクトリが作成されて、そこにコードなどが格納される。
 
 ## モデルの作成
 
@@ -47,7 +47,13 @@ Modelセレクトボックスでninaを選択する。
 
 ### メモリ不足によるエラー
 
-自分はRTX 3060 12GBを使用したが、メモリ不足で`max_split_size_mb`というエラーが出るので、Parametersタブ > Advancedで以下を設定する。
+自分はRTX 3060 12GBを使用したが、メモリ不足で以下のエラーが出た。
+
+```
+RuntimeError: CUDA out of memory. Tried to allocate 114.00 MiB (GPU 0; 11.77 GiB total capacity; 9.91 GiB already allocated; 93.31 MiB free; 9.99 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+```
+
+メモリ消費量を小さくするためにParametersタブ > Advancedで以下を設定する。
 
 * Use 8bit Adam
 * Mixed Precision > fp16
@@ -123,13 +129,39 @@ $ sudo apt autoremove
 
 <https://developer.nvidia.com/cuda-11-6-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local>の手順に従う。
 
-NOTE: どうやらドライバーも同時にインストールされるらしい。後で調べたらバージョンが510に変更されていた。
+備考: どうやらドライバーも同時にインストールされるらしい。後で調べたらバージョンが510に変更されていた。
+
+```sh
+$ nvidia-smi
+Fri Dec 23 05:25:11 2022
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 510.39.01    Driver Version: 510.39.01    CUDA Version: 11.6     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  NVIDIA GeForce ...  On   | 00000000:0A:00.0  On |                  N/A |
+|  0%   45C    P8    10W / 170W |    148MiB / 12288MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A      5595      G   /usr/lib/xorg/Xorg                 17MiB |
+|    0   N/A  N/A     11029      G   /usr/lib/xorg/Xorg                 36MiB |
+|    0   N/A  N/A     11296      G   /usr/bin/gnome-shell               84MiB |
++-----------------------------------------------------------------------------+
+```
 
 インストール後はPCを再起動する必要がある。
 
 ## 画像の生成
 
-トレーニングが成功すると`stable-diffusion-webui/models/Stable-diffusion/nina_1200.ckpt`のようなファイルが生成される。これはwebuiの左上の`Stable Diffusion checkpoint`セレクトボックスから選択できて、後はtxt2imgなどから通常通りに画像が生成出来る。
+トレーニングが成功すると`stable-diffusion-webui/models/Stable-diffusion/nina_1200.ckpt`のようなファイルが生成される。これはwebuiの左上の`Stable Diffusion checkpoint`セレクトボックスから選択できる（表示されない場合は🔃ボタンを押す）。後はtxt2imgなどから通常通りに画像が生成出来る。
 
 テスト用プロンプト:
 
