@@ -21,6 +21,12 @@ Extensions > Available > Load from: をクリックして出る一覧の中か�
 
 成功するとDreamboothタブが出る。また、`stable-diffusion-webui/extensions/sd_dreambooth_extension/`というディレクトリが作成されて、そこにコードなどが格納される。
 
+備考: 説明通りに以下の行を`webui-user.sh`に追加したが、必要だったかどうかは分からない。
+
+```sh
+export REQS_FILE="./extensions/sd_dreambooth_extension/requirements.txt"
+```
+
 ## モデルの作成
 
 Dreamboothタブ > Create Modelタブで以下を入力する。
