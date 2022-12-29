@@ -1,0 +1,306 @@
+---
+layout: post
+title: ZFS
+---
+
+## 作業ログ
+
+### 2022-12-28
+
+ふと`zpool status`を確認したらチェックサムエラーが訂正されていた。
+
+```sh
+$ zpool status tank
+  pool: tank
+ state: ONLINE
+status: One or more devices has experienced an unrecoverable error.  An
+        attempt was made to correct the error.  Applications are unaffected.
+action: Determine if the device needs to be replaced, and clear the errors
+        using 'zpool clear' or replace the device with 'zpool replace'.
+   see: https://openzfs.github.io/openzfs-docs/msg/ZFS-8000-9P
+  scan: resilvered 39.0M in 00:00:06 with 0 errors on Wed Dec 28 16:06:56 2022
+config:
+
+        NAME                        STATE     READ WRITE CKSUM
+        tank                        ONLINE       0     0     0
+          raidz2-0                  ONLINE       0     0     0
+            wwn-0x50014ee2bf21c772  ONLINE       0     0     0
+            wwn-0x50014ee2bf218152  ONLINE       0     0     0
+            wwn-0x50014ee269cb9a72  ONLINE       0     0     0
+            wwn-0x50014ee214768e83  ONLINE       0     0     0
+            wwn-0x50014ee269cba7a6  ONLINE       0     0     1
+            wwn-0x50014ee269cbc494  ONLINE       0     0     0
+            wwn-0x50014ee269cb8402  ONLINE       0     0     1
+            wwn-0x50014ee2bf21c67f  ONLINE       0     0     0
+
+errors: No known data errors
+```
+
+せっかくなので`zpool clear`をする前に少し調べてみる。
+
+<https://www.reddit.com/r/zfs/comments/o4lb3j/zfs_unrecoverable_error_how_to_know_for_sure_what/>を参考にして`/var/log/kern.log`を見ると、確かに`wwn-0x50014ee269cba7a6`と`wwn-0x50014ee269cb8402`に関連するエラーメッセージが見つかる。
+
+```sh
+$ cat /var/log/kern.log
+...
+Dec 25 19:17:35 saginomiya kernel: [222805.761773] ata2.00: exception Emask 0x0 SAct 0x4009c30c SErr 0xd0000 action 0x6 frozen
+Dec 25 19:17:35 saginomiya kernel: [222805.761783] ata2: SError: { PHYRdyChg CommWake 10B8B }
+Dec 25 19:17:35 saginomiya kernel: [222805.761787] ata2.00: failed command: READ FPDMA QUEUED
+Dec 25 19:17:35 saginomiya kernel: [222805.761789] ata2.00: cmd 60/28:10:00:c0:1d/00:00:6f:00:00/40 tag 2 ncq dma 20480 in
+Dec 25 19:17:35 saginomiya kernel: [222805.761789]          res 40/00:01:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
+Dec 25 19:17:35 saginomiya kernel: [222805.761795] ata2.00: status: { DRDY }
+Dec 25 19:17:35 saginomiya kernel: [222805.761797] ata2.00: failed command: WRITE FPDMA QUEUED
+Dec 25 19:17:35 saginomiya kernel: [222805.761799] ata2.00: cmd 61/08:18:48:39:00/00:00:79:01:00/40 tag 3 ncq dma 4096 out
+Dec 25 19:17:35 saginomiya kernel: [222805.761799]          res 40/00:01:06:4f:c2/00:00:00:00:00/00 Emask 0x4 (timeout)
+Dec 25 19:17:35 saginomiya kernel: [222805.761804] ata2.00: status: { DRDY }
+...
+Dec 25 19:17:35 saginomiya kernel: [222806.237488] ata2: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+Dec 25 19:17:35 saginomiya kernel: [222806.239895] ata2.00: configured for UDMA/133
+Dec 25 19:17:35 saginomiya kernel: [222806.239981] sd 2:0:0:0: [sde] tag#2 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=32s
+Dec 25 19:17:35 saginomiya kernel: [222806.239985] sd 2:0:0:0: [sde] tag#2 Sense Key : Illegal Request [current]
+Dec 25 19:17:35 saginomiya kernel: [222806.239987] sd 2:0:0:0: [sde] tag#2 Add. Sense: Unaligned write command
+Dec 25 19:17:35 saginomiya kernel: [222806.239989] sd 2:0:0:0: [sde] tag#2 CDB: Read(16) 88 00 00 00 00 00 6f 1d c0 00 00 00 00 28 00 00
+Dec 25 19:17:35 saginomiya kernel: [222806.239990] blk_update_request: I/O error, dev sde, sector 1864220672 op 0x0:(READ) flags 0x700 phys_seg 1 prio class 0
+Dec 25 19:17:35 saginomiya kernel: [222806.239999] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cb8402-part1 error=5 type=1 offset=954479935488 size=20480 flags=180880
+Dec 25 19:17:35 saginomiya kernel: [222806.240018] sd 2:0:0:0: [sde] tag#3 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=30s
+Dec 25 19:17:35 saginomiya kernel: [222806.240020] sd 2:0:0:0: [sde] tag#3 Sense Key : Illegal Request [current]
+Dec 25 19:17:35 saginomiya kernel: [222806.240022] sd 2:0:0:0: [sde] tag#3 Add. Sense: Unaligned write command
+Dec 25 19:17:35 saginomiya kernel: [222806.240023] sd 2:0:0:0: [sde] tag#3 CDB: Write(16) 8a 00 00 00 00 01 79 00 39 48 00 00 00 08 00 00
+Dec 25 19:17:35 saginomiya kernel: [222806.240024] blk_update_request: I/O error, dev sde, sector 6325025096 op 0x1:(WRITE) flags 0x700 phys_seg 1 prio class 0
+Dec 25 19:17:35 saginomiya kernel: [222806.240029] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cb8402-part1 error=5 type=2 offset=3238411800576 size=4096 flags=180880
+...
+Dec 25 20:32:02 saginomiya kernel: [227272.369557] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cba7a6-part1 error=5 type=2 offset=3238433095680 size=4096 flags=180880
+Dec 25 20:32:02 saginomiya kernel: [227272.369563] sd 6:0:0:0: [sdg] tag#17 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=30s
+Dec 25 20:32:02 saginomiya kernel: [227272.369564] sd 6:0:0:0: [sdg] tag#17 Sense Key : Illegal Request [current]
+Dec 25 20:32:02 saginomiya kernel: [227272.369566] sd 6:0:0:0: [sdg] tag#17 Add. Sense: Unaligned write command
+Dec 25 20:32:02 saginomiya kernel: [227272.369567] sd 6:0:0:0: [sdg] tag#17 CDB: Write(16) 8a 00 00 00 00 01 79 00 db b8 00 00 00 08 00 00
+Dec 25 20:32:02 saginomiya kernel: [227272.369568] blk_update_request: I/O error, dev sdg, sector 6325066680 op 0x1:(WRITE) flags 0x700 phys_seg 1 prio class 0
+Dec 25 20:32:02 saginomiya kernel: [227272.369570] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cba7a6-part1 error=5 type=2 offset=3238433091584 size=4096 flags=180880
+Dec 25 20:32:02 saginomiya kernel: [227272.369574] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cba7a6-part1 error=5 type=1 offset=1108155359232 size=24576 flags=180880
+Dec 25 20:32:02 saginomiya kernel: [227272.369577] ata6: EH complete
+```
+(`~/misc/kern.log`に`Do 29 Dez 2022 09:32:50 CET`時点でのログを保存した)
+
+ブラウザ履歴によると、2022-12-25 7:11 pm ごろに PhotoPrism で Library > Complete Rescan をしている（Dockerイメージを更新したため）。それに関連したデータアクセスで問題が発生したらしい。
+
+SMARTを調べてみたが特に問題は無さそう。
+
+```sh
+$ sudo skdump /dev/disk/by-id/wwn-0x50014ee269cba7a6
+Device: sat16:/dev/disk/by-id/wwn-0x50014ee269cba7a6
+Type: 16 Byte SCSI ATA SAT Passthru
+Size: 3815447 MiB
+Model: [WDC WD40EFZX-68AWUN0]
+Serial: [WD-WXB2D71HTZS9]
+Firmware: [81.00B81]
+SMART Available: yes
+Quirks:
+Awake: yes
+SMART Disk Health Good: yes
+Off-line Data Collection Status: [Off-line data collection activity was never started.]
+Total Time To Complete Off-Line Data Collection: 43740 s
+Self-Test Execution Status: [The previous self-test routine completed without error or no self-test has ever been run.]
+Percent Self-Test Remaining: 0%
+Conveyance Self-Test Available: no
+Short/Extended Self-Test Available: yes
+Start Self-Test Available: yes
+Abort Self-Test Available: yes
+Short Self-Test Polling Time: 2 min
+Extended Self-Test Polling Time: 464 min
+Conveyance Self-Test Polling Time: 0 min
+Bad Sectors: 0 sectors
+Powered On: 9.8 months
+Power Cycles: 28
+Average Powered On Per Power Cycle: 10.5 days
+Temperature: 35.0 C
+Attribute Parsing Verification: Good
+Overall Status: GOOD
+ID# Name                        Value Worst Thres Pretty      Raw            Type    Updates Good Good/Past
+  1 raw-read-error-rate         200   200    51   0           0x000000000000 prefail online  yes  yes
+  3 spin-up-time                229   223    21   3.5 s       0xbc0d00000000 prefail online  yes  yes
+  4 start-stop-count            100   100     0   28          0x1c0000000000 old-age online  n/a  n/a
+  5 reallocated-sector-count    200   200   140   0 sectors   0x000000000000 prefail online  yes  yes
+  7 seek-error-rate             100   253     0   0           0x000000000000 old-age online  n/a  n/a
+  9 power-on-hours               91    91     0   9.8 months  0x881b00000000 old-age online  n/a  n/a
+ 10 spin-retry-count            100   253     0   0           0x000000000000 old-age online  n/a  n/a
+ 11 calibration-retry-count     100   253     0   0           0x000000000000 old-age online  n/a  n/a
+ 12 power-cycle-count           100   100     0   28          0x1c0000000000 old-age online  n/a  n/a
+192 power-off-retract-count     200   200     0   16          0x100000000000 old-age online  n/a  n/a
+193 load-cycle-count            200   200     0   2503        0xc70900000000 old-age online  n/a  n/a
+194 temperature-celsius-2       115   104     0   35.0 C      0x230000000000 old-age online  n/a  n/a
+196 reallocated-event-count     200   200     0   0           0x000000000000 old-age online  n/a  n/a
+197 current-pending-sector      200   200     0   0 sectors   0x000000000000 old-age online  n/a  n/a
+198 offline-uncorrectable       100   253     0   0 sectors   0x000000000000 old-age offline n/a  n/a
+199 udma-crc-error-count        200   200     0   0           0x000000000000 old-age online  n/a  n/a
+200 multi-zone-error-rate       100   253     0   0           0x000000000000 old-age offline n/a  n/a
+
+$ sudo skdump /dev/disk/by-id/wwn-0x50014ee269cb8402
+Device: sat16:/dev/disk/by-id/wwn-0x50014ee269cb8402
+Type: 16 Byte SCSI ATA SAT Passthru
+Size: 3815447 MiB
+Model: [WDC WD40EFZX-68AWUN0]
+Serial: [WD-WXB2D71CE618]
+Firmware: [81.00B81]
+SMART Available: yes
+Quirks:
+Awake: yes
+SMART Disk Health Good: yes
+Off-line Data Collection Status: [Off-line data collection activity was never started.]
+Total Time To Complete Off-Line Data Collection: 41040 s
+Self-Test Execution Status: [The previous self-test routine completed without error or no self-test has ever been run.]
+Percent Self-Test Remaining: 0%
+Conveyance Self-Test Available: no
+Short/Extended Self-Test Available: yes
+Start Self-Test Available: yes
+Abort Self-Test Available: yes
+Short Self-Test Polling Time: 2 min
+Extended Self-Test Polling Time: 436 min
+Conveyance Self-Test Polling Time: 0 min
+Bad Sectors: 0 sectors
+Powered On: 9.8 months
+Power Cycles: 32
+Average Powered On Per Power Cycle: 9.2 days
+Temperature: 33.0 C
+Attribute Parsing Verification: Good
+Overall Status: GOOD
+ID# Name                        Value Worst Thres Pretty      Raw            Type    Updates Good Good/Past
+  1 raw-read-error-rate         200   200    51   0           0x000000000000 prefail online  yes  yes
+  3 spin-up-time                229   223    21   3.5 s       0xcd0d00000000 prefail online  yes  yes
+  4 start-stop-count            100   100     0   32          0x200000000000 old-age online  n/a  n/a
+  5 reallocated-sector-count    200   200   140   0 sectors   0x000000000000 prefail online  yes  yes
+  7 seek-error-rate             100   253     0   0           0x000000000000 old-age online  n/a  n/a
+  9 power-on-hours               91    91     0   9.8 months  0x861b00000000 old-age online  n/a  n/a
+ 10 spin-retry-count            100   253     0   0           0x000000000000 old-age online  n/a  n/a
+ 11 calibration-retry-count     100   253     0   0           0x000000000000 old-age online  n/a  n/a
+12 power-cycle-count           100   100     0   32          0x200000000000 old-age online  n/a  n/a
+192 power-off-retract-count     200   200     0   18          0x120000000000 old-age online  n/a  n/a
+193 load-cycle-count            200   200     0   1791        0xff0600000000 old-age online  n/a  n/a
+194 temperature-celsius-2       117   105     0   33.0 C      0x210000000000 old-age online  n/a  n/a
+196 reallocated-event-count     200   200     0   0           0x000000000000 old-age online  n/a  n/a
+197 current-pending-sector      200   200     0   0 sectors   0x000000000000 old-age online  n/a  n/a
+198 offline-uncorrectable       100   253     0   0 sectors   0x000000000000 old-age offline n/a  n/a
+199 udma-crc-error-count        200   200     0   0           0x000000000000 old-age online  n/a  n/a
+200 multi-zone-error-rate       100   253     0   0           0x000000000000 old-age offline n/a  n/a
+```
+
+特にディスクに問題は無さそうなので、clear & scrubをして様子を見る。
+
+```sh
+$ sudo zpool clear tank
+$ sudo zpool scrub tank
+```
+
+備考: そもそも明示的にscrubを実行した覚えがないので理由を調べたら、どうやらUbuntuに勝手に設定されていた ([参考1](https://www.reddit.com/r/zfs/comments/9bxj2y/where_is_the_scrub_schedule_coming_from_on_ubuntu/), [参考2](https://github.com/openzfs/zfs/issues/9858))
+
+```sh
+$ cat /etc/cron.d/zfsutils-linux 
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# TRIM the first Sunday of every month.
+24 0 1-7 * * root if [ $(date +\%w) -eq 0 ] && [ -x /usr/lib/zfs-linux/trim ]; then /usr/lib/zfs-linux/trim; fi
+
+# Scrub the second Sunday of every month.
+24 0 8-14 * * root if [ $(date +\%w) -eq 0 ] && [ -x /usr/lib/zfs-linux/scrub ]; then /usr/lib/zfs-linux/scrub; fi
+```
+
+### 2022-06-26
+
+外部USB接続のHDDにzpoolを作成する。
+
+```sh
+$ sudo zpool create tank-mirror usb-WDC_WUH_721816ALE6L4_000000004899-0:0
+```
+
+`zfs send`を使ってメインのzpoolからバックアップを取る。
+
+```sh
+#!/bin/bash
+
+set -ex
+
+d=$(date +%F)
+sudo zfs snapshot tank/photos@$d
+sudo zfs send tank/photos@$d | sudo zfs receive tank-mirror/photos
+```
+
+備考: 自動でマウントされない場合は以下を実行する。
+
+```sh
+$ sudo zpool import tank-mirror 
+```
+
+### 2022-02-03
+
+`WD Red Plus 4 TB, 3.5", CMR` * 8 を使用してRAID-Z2でzpoolを作成する。
+
+```sh
+#!/bin/bash
+
+$ sudo zpool create tank raidz2 \
+  /dev/disk/by-id/wwn-0x50014ee214768e83 \
+  /dev/disk/by-id/wwn-0x50014ee269cb8402 \
+  /dev/disk/by-id/wwn-0x50014ee269cb9a72 \
+  /dev/disk/by-id/wwn-0x50014ee269cba7a6 \
+  /dev/disk/by-id/wwn-0x50014ee269cbc494 \
+  /dev/disk/by-id/wwn-0x50014ee2bf218152 \
+  /dev/disk/by-id/wwn-0x50014ee2bf21c67f \
+  /dev/disk/by-id/wwn-0x50014ee2bf21c772
+```
+
+ディスクはIDで指定するのが再現性があってよい。
+
+備考: `zpool history`でコマンド履歴が見られる。
+
+```sh
+$ sudo zpool history tank
+History for 'tank':
+2022-02-02.15:29:47 zpool create tank raidz2 /dev/disk/by-id/wwn-0x50014ee2bf21c772 /dev/disk/by-id/wwn-0x50014ee2bf218152 /dev/disk/by-id/wwn-0x50014ee269cb9a72 /dev/disk/by-id/wwn-0x50014ee214768e83 /dev/disk/by-id/wwn-0x50014ee269cba7a6 /dev/disk/by-id/wwn-0x50014ee269cbc494 /dev/disk/by-id/wwn-0x50014ee269cb8402 /dev/disk/by-id/wwn-0x50014ee2bf21c67f
+2022-02-02.15:31:04 zfs create tank/test
+2022-02-03.15:21:18 zpool import -c /etc/zfs/zpool.cache -aN
+2022-02-03.15:46:43 zfs destroy tank/test
+2022-02-03.15:47:25 zfs create tank/photos
+2022-02-06.15:18:28 zpool import -c /etc/zfs/zpool.cache -aN
+2022-02-13.00:24:28 zpool scrub tank
+2022-02-18.12:43:53 zpool import -c /etc/zfs/zpool.cache -aN
+2022-02-18.13:11:34 zpool import -c /etc/zfs/zpool.cache -aN
+2022-03-07.00:23:50 zpool import -c /etc/zfs/zpool.cache -aN
+2022-03-08.21:37:37 zpool import -c /etc/zfs/zpool.cache -aN
+2022-03-13.00:24:28 zpool scrub tank
+2022-04-09.18:19:06 zpool import -c /etc/zfs/zpool.cache -aN
+2022-04-10.00:24:20 zpool scrub tank
+2022-05-08.00:24:23 zpool scrub tank
+2022-05-15.16:09:56 zpool import -c /etc/zfs/zpool.cache -aN
+2022-05-22.11:01:41 zfs snapshot tank@2022-05-22
+2022-05-22.11:13:59 zfs destroy tank@2022-05-22
+2022-05-22.11:15:53 zfs snapshot tank/photos@2022-05-22
+2022-06-01.20:24:24 zpool import -c /etc/zfs/zpool.cache -aN
+2022-06-12.00:24:29 zpool scrub tank
+2022-06-19.11:53:14 zpool import -c /etc/zfs/zpool.cache -aN
+2022-07-01.14:37:38 zpool import -c /etc/zfs/zpool.cache -aN
+2022-07-10.00:24:20 zpool scrub tank
+2022-07-15.16:20:11 zpool import -c /etc/zfs/zpool.cache -aN
+2022-08-08.04:39:29 zpool import -c /etc/zfs/zpool.cache -aN
+2022-08-14.00:24:09 zpool scrub tank
+2022-09-19.17:43:55 zpool import -c /etc/zfs/zpool.cache -aN
+2022-10-02.18:31:31 zpool import -c /etc/zfs/zpool.cache -aN
+2022-10-09.17:37:56 zpool import -c /etc/zfs/zpool.cache -aN
+2022-10-26.14:15:12 zpool import -c /etc/zfs/zpool.cache -aN
+2022-11-13.00:24:09 zpool scrub tank
+2022-12-12.11:10:29 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-12.11:13:46 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.07:52:28 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.09:51:16 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.10:10:05 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.18:11:33 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.18:27:52 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.18:39:38 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.18:57:11 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.18:59:52 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.19:06:14 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.19:09:40 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-17.19:16:47 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-18.09:58:24 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-18.14:58:45 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-18.16:25:26 zpool import -c /etc/zfs/zpool.cache -aN
+2022-12-28.16:06:45 zpool import -c /etc/zfs/zpool.cache -aN
+```
