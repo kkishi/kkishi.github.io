@@ -1,0 +1,38 @@
+---
+layout: post
+title: Calibre
+---
+
+## Calibreが使用するディレクトリを作成する
+
+```sh
+$ sudo mkdir /tank/calibre
+$ sudo chgrp keisuke /tank/calibre
+$ sudo chown keisuke /tank/calibre
+```
+
+## Calibreのインストール
+
+Ubuntu Softwareで`calibre`を検索しインストールする。初回起動時の設定:
+
+* directory: `/tank/calibre`
+* e-book device: Android > Android phone
+
+`/tank/calibre/metadata.db`が生成される。
+
+本はCalibreのUIから追加できる。
+
+## Calibre-Webのインストール
+
+<https://hub.docker.com/r/linuxserver/calibre-web>に従ってdocker-composeでインストールする。`docker-compose.yml`を以下のように変更する。
+
+```
+      - ./config:/config
+      - /tank/calibre:/books
+```
+
+初回アクセス時にDatabase Configurationを`/books`に設定する。`Database Settings updated`と表示される。
+
+## 参考
+
+* <https://www.reddit.com/r/selfhosted/comments/lh9mqc/self_hosted_ebook_server_with_notessync/>

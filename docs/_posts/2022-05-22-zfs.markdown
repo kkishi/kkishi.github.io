@@ -5,6 +5,16 @@ title: ZFS
 
 ## 作業ログ
 
+### 2022-12-29
+
+Ubuntu 22.04 にアップデートしたら bpool や rpool がドックに表示されるようになった([例](https://askubuntu.com/questions/1440112/how-to-remove-rpool-and-bpool-ssd-icons-from-ubuntu-22-10-dock))。
+
+<https://bugs.launchpad.net/ubuntu/+source/gnome-shell-extension-ubuntu-dock/+bug/1967174>を参考にして以下のコマンドを実行すればよい。
+
+```sh
+$ gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
+```
+
 ### 2022-12-28
 
 ふと`zpool status`を確認したらチェックサムエラーが訂正されていた。
