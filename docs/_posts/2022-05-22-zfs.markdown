@@ -5,6 +5,73 @@ title: ZFS
 
 ## 作業ログ
 
+### 2022-12-30
+
+昨日実行したscrubが終わった後statusを調べたらREADとWRITEでエラーが出ていた。
+
+```sh
+            wwn-0x50014ee269cb8402  ONLINE       6     1     0
+```
+
+`/var/log/kern.log`にもエラーが表示されている。
+
+```sh
+$ cat /var/log/kern.log
+...
+Dec 29 11:45:56 saginomiya kernel: [70761.593330] ata2.00: exception Emask 0x0 SAct 0x72000 SErr 0xd0000 action 0x6 frozen
+Dec 29 11:45:56 saginomiya kernel: [70761.593339] ata2: SError: { PHYRdyChg CommWake 10B8B }
+Dec 29 11:45:56 saginomiya kernel: [70761.593343] ata2.00: failed command: WRITE FPDMA QUEUED
+Dec 29 11:45:56 saginomiya kernel: [70761.593345] ata2.00: cmd 61/10:68:98:35:00/00:00:22:01:00/40 tag 13 ncq dma 8192 out
+Dec 29 11:45:56 saginomiya kernel: [70761.593345]          res 40/00:01:06:4f:c2/00:00:00:00:00/00 Emask 0x4 (timeout)
+Dec 29 11:45:56 saginomiya kernel: [70761.593351] ata2.00: status: { DRDY }
+Dec 29 11:45:56 saginomiya kernel: [70761.593353] ata2.00: failed command: READ FPDMA QUEUED
+Dec 29 11:45:56 saginomiya kernel: [70761.593355] ata2.00: cmd 60/28:80:88:1a:a0/00:00:69:01:00/40 tag 16 ncq dma 20480 in
+Dec 29 11:45:56 saginomiya kernel: [70761.593355]          res 40/00:ff:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
+Dec 29 11:45:56 saginomiya kernel: [70761.593359] ata2.00: status: { DRDY }
+Dec 29 11:45:56 saginomiya kernel: [70761.593361] ata2.00: failed command: READ FPDMA QUEUED
+Dec 29 11:45:56 saginomiya kernel: [70761.593362] ata2.00: cmd 60/30:88:b0:1a:a0/00:00:69:01:00/40 tag 17 ncq dma 24576 in
+Dec 29 11:45:56 saginomiya kernel: [70761.593362]          res 40/00:01:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
+Dec 29 11:45:56 saginomiya kernel: [70761.593366] ata2.00: status: { DRDY }
+Dec 29 11:45:56 saginomiya kernel: [70761.593367] ata2.00: failed command: READ FPDMA QUEUED
+Dec 29 11:45:56 saginomiya kernel: [70761.593368] ata2.00: cmd 60/28:90:e0:1a:a0/00:00:69:01:00/40 tag 18 ncq dma 20480 in
+Dec 29 11:45:56 saginomiya kernel: [70761.593368]          res 40/00:01:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
+Dec 29 11:45:56 saginomiya kernel: [70761.593372] ata2.00: status: { DRDY }
+Dec 29 11:45:56 saginomiya kernel: [70761.593375] ata2: hard resetting link
+Dec 29 11:45:57 saginomiya kernel: [70762.065012] ata2: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+Dec 29 11:45:57 saginomiya kernel: [70762.067355] ata2.00: configured for UDMA/133
+Dec 29 11:45:57 saginomiya kernel: [70762.067453] sd 1:0:0:0: [sde] tag#13 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=32s
+Dec 29 11:45:57 saginomiya kernel: [70762.067457] sd 1:0:0:0: [sde] tag#13 Sense Key : Illegal Request [current]
+Dec 29 11:45:57 saginomiya kernel: [70762.067459] sd 1:0:0:0: [sde] tag#13 Add. Sense: Unaligned write command
+Dec 29 11:45:57 saginomiya kernel: [70762.067461] sd 1:0:0:0: [sde] tag#13 CDB: Write(16) 8a 00 00 00 00 01 22 00 35 98 00 00 00 10 00 00
+Dec 29 11:45:57 saginomiya kernel: [70762.067462] blk_update_request: I/O error, dev sde, sector 4865406360 op 0x1:(WRITE) flags 0x700 phys_seg 2 prio class 0
+Dec 29 11:45:57 saginomiya kernel: [70762.067469] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cb8402-part1 error=5 type=2 offset=2491087007744 size=8192 flags=180880
+Dec 29 11:45:57 saginomiya kernel: [70762.067486] sd 1:0:0:0: [sde] tag#16 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=56s
+Dec 29 11:45:57 saginomiya kernel: [70762.067487] sd 1:0:0:0: [sde] tag#16 Sense Key : Illegal Request [current]
+Dec 29 11:45:57 saginomiya kernel: [70762.067488] sd 1:0:0:0: [sde] tag#16 Add. Sense: Unaligned write command
+Dec 29 11:45:57 saginomiya kernel: [70762.067490] sd 1:0:0:0: [sde] tag#16 CDB: Read(16) 88 00 00 00 00 01 69 a0 1a 88 00 00 00 28 00 00
+Dec 29 11:45:57 saginomiya kernel: [70762.067490] blk_update_request: I/O error, dev sde, sector 6067067528 op 0x0:(READ) flags 0x700 phys_seg 1 prio class 0
+Dec 29 11:45:57 saginomiya kernel: [70762.067494] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cb8402-part1 error=5 type=1 offset=3106337525760 size=20480 flags=1808b0
+Dec 29 11:45:57 saginomiya kernel: [70762.067499] sd 1:0:0:0: [sde] tag#17 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=56s
+Dec 29 11:45:57 saginomiya kernel: [70762.067501] sd 1:0:0:0: [sde] tag#17 Sense Key : Illegal Request [current]
+Dec 29 11:45:57 saginomiya kernel: [70762.067502] sd 1:0:0:0: [sde] tag#17 Add. Sense: Unaligned write command
+Dec 29 11:45:57 saginomiya kernel: [70762.067503] sd 1:0:0:0: [sde] tag#17 CDB: Read(16) 88 00 00 00 00 01 69 a0 1a b0 00 00 00 30 00 00
+Dec 29 11:45:57 saginomiya kernel: [70762.067504] blk_update_request: I/O error, dev sde, sector 6067067568 op 0x0:(READ) flags 0x700 phys_seg 1 prio class 0
+Dec 29 11:45:57 saginomiya kernel: [70762.067506] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cb8402-part1 error=5 type=1 offset=3106337546240 size=24576 flags=1808b0
+Dec 29 11:45:57 saginomiya kernel: [70762.067509] sd 1:0:0:0: [sde] tag#18 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=56s
+Dec 29 11:45:57 saginomiya kernel: [70762.067510] sd 1:0:0:0: [sde] tag#18 Sense Key : Illegal Request [current]
+Dec 29 11:45:57 saginomiya kernel: [70762.067511] sd 1:0:0:0: [sde] tag#18 Add. Sense: Unaligned write command
+Dec 29 11:45:57 saginomiya kernel: [70762.067512] sd 1:0:0:0: [sde] tag#18 CDB: Read(16) 88 00 00 00 00 01 69 a0 1a e0 00 00 00 28 00 00
+Dec 29 11:45:57 saginomiya kernel: [70762.067513] blk_update_request: I/O error, dev sde, sector 6067067616 op 0x0:(READ) flags 0x700 phys_seg 1 prio class 0
+Dec 29 11:45:57 saginomiya kernel: [70762.067515] zio pool=tank vdev=/dev/disk/by-id/wwn-0x50014ee269cb8402-part1 error=5 type=1 offset=3106337570816 size=20480 flags=1808b0
+Dec 29 11:45:57 saginomiya kernel: [70762.067519] ata2: EH complete
+```
+
+`ata2.00: failed command: WRITE FPDMA QUEUED`で検索すると、いくつかのページでHDDとPCの接続を調べろとある。確かに心当たりがある（最近グラフィックスカードを設置するためにSATAケーブルを抜き差しした）。
+
+接続を調べると、現在エラーが出ている`wwn-0x50014ee269cb8402`は一番下、以前エラーが出ていた`wwn-0x50014ee269cba7a6`は下から二番目にある。マザーボードとの接続を調べるとどちらも同じ端子に接続されている。どうやらグラフィックスカードに圧迫されてケーブルの接触が悪くなっていたらしい。ケーブルの取り回しを改善して再度試す。しかし、エラーが出続ける。
+
+仕方がないのでHBA(9211-8iが4ポート空いていた)に接続し直すとエラーが止まった。マザーボード付属のSATA端子が4つとも壊れてしまったかも。詳しいことは後で調べるとして当面はHBAにHDDを全て接続することにする。
+
 ### 2022-12-29
 
 Ubuntu 22.04 にアップデートしたら bpool や rpool がドックに表示されるようになった([例](https://askubuntu.com/questions/1440112/how-to-remove-rpool-and-bpool-ssd-icons-from-ubuntu-22-10-dock))。
