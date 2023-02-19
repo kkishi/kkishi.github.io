@@ -1,0 +1,9 @@
+---
+layout: post
+title:  "CS782DP"
+---
+[KVM](https://www.digitec.ch/de/s1/product/aten-cs782dp-kvm-switch-5700489)を買った。
+
+* Display PortケーブルとUSBケーブルがそれぞれ二本ずつ同梱されているので追加でケーブルを購入する必要がないことに注意。
+* キーボードは二口あるUSBポートのうち下側に差すこと。するとHotkeyが認識される。
+* デフォルトではMouse Emulation ModeがOn(何のことだか未だに分かっていない)になっているので、USBハブを接続しても認識されない。HotkeyでOffにする(`[Scroll Lock] [Scroll Lock] [m] [Enter]` の順に押す)必要がある。
