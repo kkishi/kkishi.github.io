@@ -1,0 +1,18 @@
+---
+layout: post
+title:  "Corne"
+---
+
+2020/11/29にCorneを組み立てたが色々と書き留めていなかったのでメモ。
+
+## QMK Firmware
+
+<https://github.com/kkishi/qmk_firmware>にcloneした。自分のキーマップは`corne`ブランチの[keymap.c](https://github.com/kkishi/qmk_firmware/blob/41d54440fcb4bcd1ca049fc96b37dc926a002794/keyboards/crkbd/keymaps/default/keymap.c)にある。Planckのようにした。
+
+焼くには[当時の公式ガイド](https://github.com/foostan/crkbd/blob/bb2e672d3d3b5a50eb3156805242afe992cd21b5/corne-cherry/doc/v2/buildguide_jp.md#%E3%83%95%E3%82%A1%E3%83%BC%E3%83%A0%E3%82%A6%E3%82%A7%E3%82%A2)を参照。
+
+## Ubuntuで使う際の設定
+
+`CMD`キーはKC_LGUIに設定されている(Macで使うときに`Command`になって便利なので)が、そのままだと不便なので`Alt`にする。GNOME Tweaksをインストールして`Tweaks > Keyboard & Mouse > Additional Layout Options > Alt/Win key behavior > Alt is mapped to Win and the usual Alt`を選択する。
+
+今度はinput sourceの切り替えができなくなるので、`Settings > Keyboard > View and Customize Shortcuts > Typing > Switch to next input source`で`CMD+Space`を押下する。
