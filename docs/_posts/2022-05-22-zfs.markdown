@@ -5,6 +5,34 @@ title: ZFS
 
 ## 作業ログ
 
+### 2023-05-23
+
+別のマシンにZFSでフォーマットされたHDDをUSB接続してSSH越しにzfs send/receiveをする。
+
+まず受信側でzpoolをimportする。このマシンにこのHDDを接続するのは初めてだったが特に設定は必要なく次のコマンドでimportできた。
+
+```sh
+keisuke@hibarigaoka:~$ sudo zpool import tank-mirror
+```
+
+SSH越しにコマンドを実行するときにパスワードを要求されると不便なので、receiveに必要なパーミッションを与えておく。
+
+```sh
+keisuke@hibarigaoka:~$ sudo zfs allow keisuke create,mount,receive tank-mirror/photos
+```
+
+ついでに送信側でもsendに必要なパーミッションを与える。
+
+```sh
+keisuke@saginomiya:~$ sudo zfs allow keisuke send tank/photos
+```
+
+次のようなコマンドでsnapshotを送信できる。
+
+```sh
+keisuke@saginomiya:~$ zfs send -v -i tank/photos@2023-05-08-11:04 tank/photos@2023-05-23-11:08 | ssh keisuke@10.0.0.2 'zfs receive -v -F tank-mirror/photos'
+```
+
 ### 2022-12-30
 
 昨日実行したscrubが終わった後statusを調べたらREADとWRITEでエラーが出ていた。
