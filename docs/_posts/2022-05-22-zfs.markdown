@@ -7,7 +7,7 @@ title: ZFS
 
 ### 2023-05-23
 
-別のマシンにZFSでフォーマットされたHDDをUSB接続してSSH越しにzfs send/receiveをする。
+#### 別のマシンにZFSでフォーマットされたHDDをUSB接続してSSH越しにzfs send/receiveをする
 
 まず受信側でzpoolをimportする。このマシンにこのHDDを接続するのは初めてだったが特に設定は必要なく次のコマンドでimportできた。
 
@@ -32,6 +32,67 @@ keisuke@saginomiya:~$ sudo zfs allow keisuke send tank/photos
 ```sh
 keisuke@saginomiya:~$ zfs send -v -i tank/photos@2023-05-08-11:04 tank/photos@2023-05-23-11:08 | ssh keisuke@10.0.0.2 'zfs receive -v -F tank-mirror/photos'
 ```
+
+#### 新しいdatasetをreceiveする(自動的に受信側でdatasetをcreateする)
+
+```sh
+keisuke@hibarigaoka:~$ sudo zfs allow keisuke receive,create,mount tank-mirror
+```
+
+```sh
+keisuke@saginomiya:~$ sudo zfs create tank/media
+keisuke@saginomiya:~$ sudo zfs snapshot tank/media@2023-05-24-00:40
+keisuke@saginomiya:~$ zfs send -v tank/media@2023-05-24-00:40 | ssh keisuke@10.0.0.2 'zfs receive -v tank-mirror/media'
+```
+
+#### 基本的なコマンド
+
+```sh
+keisuke@saginomiya:~$ zpool status tank -v
+  pool: tank
+ state: ONLINE
+  scan: scrub repaired 0B in 01:58:43 with 0 errors on Sun May 14 02:22:46 2023
+config:
+
+	NAME                        STATE     READ WRITE CKSUM
+	tank                        ONLINE       0     0     0
+	  raidz2-0                  ONLINE       0     0     0
+	    wwn-0x50014ee2bf21c772  ONLINE       0     0     0
+	    wwn-0x50014ee2bf218152  ONLINE       0     0     0
+	    wwn-0x50014ee269cb9a72  ONLINE       0     0     0
+	    wwn-0x50014ee214768e83  ONLINE       0     0     0
+	    wwn-0x50014ee269cba7a6  ONLINE       0     0     0
+	    wwn-0x50014ee269cbc494  ONLINE       0     0     0
+	    wwn-0x50014ee269cb8402  ONLINE       0     0     0
+	    wwn-0x50014ee2bf21c67f  ONLINE       0     0     0
+
+errors: No known data errors
+```
+
+```sh
+keisuke@saginomiya:~$ zfs list tank -r
+NAME          USED  AVAIL     REFER  MOUNTPOINT
+tank         5.29T  15.3T      114G  /tank
+tank/media    748G  15.3T      743G  /tank/media
+tank/photos  4.45T  15.3T     3.81T  /tank/photos
+```
+
+```sh
+keisuke@saginomiya:~$ zfs list tank -t snapshot -r
+NAME                           USED  AVAIL     REFER  MOUNTPOINT
+tank/media@2023-05-24-00:40   4.85G      -      743G  -
+tank/media@2023-05-24-08:54    239K      -      743G  -
+tank/photos@2022-05-22         649G      -     3.43T  -
+tank/photos@2023-01-30        12.8M      -     3.52T  -
+tank/photos@2023-04-22        3.65M      -     3.65T  -
+tank/photos@2023-04-23-11:10  3.67M      -     3.69T  -
+tank/photos@2023-05-04-09:23  13.1M      -     3.72T  -
+tank/photos@2023-05-08-11:04  12.9M      -     3.81T  -
+tank/photos@2023-05-23-11:08  3.27M      -     3.81T  -
+```
+
+
+
 
 ### 2022-12-30
 
