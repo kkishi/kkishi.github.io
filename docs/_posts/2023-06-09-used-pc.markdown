@@ -3,13 +3,33 @@ layout: post
 title:  "Used PC"
 ---
 
-I recently bought a used PC on Ricardo. It was quite cheap (<120CHF including shipping). I'll be writing down my notes in this page.
+I recently bought a used PC on Ricardo. It was quite cheap (~115CHF including shipping). I'll be writing down my notes in this page.
+
+## Spec
+
+The machine seems to have been sold as *axxiv EQUILIBRA AQ17010*. I can see similar ones at <https://www.axxiv.ch/>.
+
+* Motherboard: [Q170M2](https://www.asus.com/commercial-motherboard/q170m2/specifications/)
+  * Form factor: MicroATX
+  * CPU: LGA 1151
+  * Memory: DDR4*4 (Max 64GB)
+  * Storage: SATA*6
+* CPU: [Core i5-6500](https://ark.intel.com/content/www/us/en/ark/products/88184/intel-core-i56500-processor-6m-cache-up-to-3-60-ghz.html)
+  * Memory: Max 64GB
+  * Graphics: HD Graphics 530
+* HDD: [Samsung 850 EVO 250GB](https://www.samsung.com/us/business/support/owners/product/850-evo-series-250gb/)
+* PSU: [SS-430GB](https://seasonic.com/s12ii#specification)
+* Case: AIO TMJ0103V3 mATX Tower (?)
+
+## Initial inspection
 
 The PC came with two power cables, one for the Switzerland plug and the other for the EU plug. I ran the PC out of the box to check if it's working at all. It brought me to the Windows 10 installation screen, which is convenient. After the installation I was able to do some browsing on the internet, so things seem to be working good.
 
 I then disconnected the PC and started disassembling it a bit. It was super dusty, so I spent some time cleaning it up.
 
-I looks like there's no GPU inside. It turned out that the CPU, Core i5-6500, has an integrated GPU (HD Graphics 530). It was working just fine except that when I played 4K Youtube videos it stuttered a bit.
+I looks like there's no GPU inside. It turned out that the CPU, Core i5-6500, has an integrated GPU (HD Graphics 530). It was working just fine except that when I played 4K Youtube videos it stuttered a bit. I can use a GT 1030 laying around.
+
+The case had six 3.5 inch HDD cages: five of them were plastic and the other one was metal. It'd be nice if we can get more metal cages.
 
 I then swapped the SSD with a brand new one, connected the 3.5 inch HDD which I've been using as an external drive (formatted as ZFS) and installed Ubuntu.
 
