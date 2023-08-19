@@ -5,6 +5,18 @@ title: ZFS
 
 ## 作業ログ
 
+### 2023-08-19
+
+新しくPCを組んでtank-mirrorを常時mountするようにした。
+
+ファイルを/tankにコピーしてさらにZFS sendするには、~/projects/に https://github.com/kkishi/misc がcloneされているとして:
+
+```
+keisuke@saginomiya:~/projects/misc/import$ ./gopro.sh
+keisuke@saginomiya:~/projects/misc/import$ ./gh5.sh
+keisuke@saginomiya:~/projects/misc/zfs_sync$ go run remote.go --addr=10.0.0.13
+```
+
 ### 2023-05-23
 
 #### 別のマシンにZFSでフォーマットされたHDDをUSB接続してSSH越しにzfs send/receiveをする
