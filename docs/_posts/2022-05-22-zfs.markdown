@@ -5,6 +5,32 @@ title: ZFS
 
 ## 作業ログ
 
+### 2023-11-12
+
+先日組んだPCの中身をUbuntuからProxmoxに入れ替えた。Proxmoxでtank-mirrorをマウントするのに以下を実行した。
+
+```
+# zpool import -f tank-mirror
+# systemctl enable zfs-import@tank-mirror
+```
+
+tank-mirrorを扱うのにユーザーを追加した。
+
+```
+# adduser keisuke
+# adduser keisuke sudo
+```
+
+```
+keisuke@saginomiya:~$ ssh-copy-id proxmox.lan
+```
+
+ZFS sendするには以下を実行する。
+
+```
+keisuke@saginomiya:~/projects/misc/zfs_sync$ go run remote.go --addr=proxmox.lan
+```
+
 ### 2023-08-19
 
 新しくPCを組んでtank-mirrorを常時mountするようにした。

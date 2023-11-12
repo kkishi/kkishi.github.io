@@ -36,3 +36,9 @@ Pi-holeをDNSとして使用するように設定する。Deco M9 Plusの設定�
 # Local DNS
 
 Pi-holeのUIにある`Local DNS`で設定できる。
+
+# Proxmox
+
+Proxmoxにインストールするには以下を参考にする。
+
+<https://www.youtube.com/watch?v=k0TwkSwLYWA>
