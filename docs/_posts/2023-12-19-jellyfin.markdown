@@ -1,0 +1,6 @@
+---
+layout: post
+title:  "Jellyfin"
+---
+
+Proxmox上にLXCコンテナを用いてインストールした。Pi-holeの場合と同様にすればよい。メディアファイルはProxmoxホストに直接マウントされたZFS上にあるので、対応するディレクトリ以下を読み込み専用でアクセスできるようにする。`/etc/pve/lxc/105.conf`に`mp0: /tank-mirror/media,mp=/tank-mirror/media,ro=true`を追記する。参考: <https://gist.github.com/JSinghDev/10e0824580a84a56022153592ac64faa>
