@@ -90,3 +90,7 @@ Fri Jun  9 02:07:23 2023
 |    0   N/A  N/A      4190      G   /usr/bin/gnome-shell                        122MiB |
 +---------------------------------------------------------------------------------------+
 ```
+
+### Adding RAM
+
+8GB RAM was getting too tight. Bought [Crucial Pro RAM 32GB Kit (2x16GB) DDR4 3200MHz Desktop Memory CP2K16G4DFRA32A](https://www.amazon.de/dp/B0C29R9LNL) for EUR 49.77.

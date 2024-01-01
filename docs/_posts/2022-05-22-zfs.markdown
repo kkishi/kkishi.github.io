@@ -5,6 +5,99 @@ title: ZFS
 
 ## 作業ログ
 
+### 2023-12-31
+
+#### ZFS on LUKS
+
+Proxmoxホストに2TB HDDが二台接続されているのでZFS on LUKSを試してみる。今回使用するデバイス:
+
+```
+keisuke@proxmox:~$ lsblk -o +wwn
+NAME                                         MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS WWN
+sdc                                            8:32   0   1.8T  0 disk             0x50014ee0ad5d3eed
+|-sdc1                                         8:33   0     1M  0 part             0x50014ee0ad5d3eed
+|-sdc2                                         8:34   0   5.6G  0 part             0x50014ee0ad5d3eed
+`-sdc3                                         8:35   0   1.8T  0 part             0x50014ee0ad5d3eed
+sdd                                            8:48   0   1.8T  0 disk             0x50014ee05807a1a8
+|-sdd1                                         8:49   0     1M  0 part             0x50014ee05807a1a8
+|-sdd2                                         8:50   0   5.6G  0 part             0x50014ee05807a1a8
+`-sdd3                                         8:51   0   1.8T  0 part             0x50014ee05807a1a8
+```
+
+LUKS Format:
+
+```
+root@proxmox:~# /sbin/cryptsetup luksFormat /dev/disk/by-id/wwn-0x50014ee0ad5d3eed
+root@proxmox:~# /sbin/cryptsetup luksFormat /dev/disk/by-id/wwn-0x50014ee05807a1a8
+```
+
+LUKS Open:
+
+```
+root@proxmox:~# /sbin/cryptsetup luksOpen /dev/disk/by-id/wwn-0x50014ee0ad5d3eed wwn-0x50014ee0ad5d3eed
+root@proxmox:~# /sbin/cryptsetup luksOpen /dev/disk/by-id/wwn-0x50014ee05807a1a8 wwn-0x50014ee05807a1a8
+```
+
+Zpoolの作成:
+
+```
+root@proxmox:~# zpool create misc raidz /dev/mapper/wwn-0x50014ee0ad5d3eed /dev/mapper/wwn-0x50014ee05807a1a8
+root@proxmox:~# zfs list
+NAME                            USED  AVAIL     REFER  MOUNTPOINT
+misc                            105K  1.76T       24K  /misc
+root@proxmox:~# zpool status misc
+root@proxmox:~# zpool status misc
+  pool: misc
+ state: ONLINE
+config:
+
+NAME                        STATE     READ WRITE CKSUM
+misc                        ONLINE       0     0     0
+  raidz1-0                  ONLINE       0     0     0
+    wwn-0x50014ee0ad5d3eed  ONLINE       0     0     0
+    wwn-0x50014ee05807a1a8  ONLINE       0     0     0
+
+errors: No known data errors
+```
+
+TODO:
+* PCの再起動時にどのようにマウントすれば良いか調べる。
+* /etc/crypttabについて調べる。
+
+#### ZFS Terminology
+
+TODO: <https://docs.oracle.com/cd/E18752_01/html/819-5461/ftyue.html>について書く。datasetとfile systemが紛らわしい。
+
+#### ZFS file system reorganization
+
+現在tank (pool) には以下のfile systemがある。
+
+```
+keisuke@saginomiya:~$ zfs list
+NAME              USED  AVAIL     REFER  MOUNTPOINT
+tank             5.91T  14.7T      130G  /tank
+tank/media        799G  14.7T      794G  /tank/media
+tank/photos      5.00T  14.7T     4.37T  /tank/photos
+```
+
+* tank: `zpool create tank ...` としたときに同時に自動で生成された。これは*default file system*と呼ばれる。`zpool create -m none tank ...`とすれば作らないことも可能。
+* tank/media: 明示的に `zfs create tank/media` として生成した。
+* tank/photos: 明示的に `zfs create tank/photos` として生成した。
+
+default file systemは色々と都合が悪いので使用しないことにする。
+
+`/tank`直下の既存ディレクトリを移すために新たなfile systemを作成する。たまたま全てセルフホストに関連していたので`selfhosted`とした。
+
+```
+$ sudo zfs create tank/selfhosted
+```
+
+既存のディレクトリはrsyncで移動した。
+
+TODO:以下のいずれかを行う。
+* tank (file system) を削除し`zfs set mountpoint=none tank`とする。参考: <https://www.reddit.com/r/zfs/comments/tl0r0s/recommended_not_to_use_top_level_dataset/>
+* tank (file system) は tank (pool) 以下の全てのfile systemを`zfs send -R`するために使用することにする（これ以外でプール全体をまとめてsendする方法はなさそう）。
+
 ### 2023-11-12
 
 先日組んだPCの中身をUbuntuからProxmoxに入れ替えた。Proxmoxでtank-mirrorをマウントするのに以下を実行した。
